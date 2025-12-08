@@ -35,6 +35,11 @@ class AbstractDynamicChoice(models.Model):
         abstract = True
         ordering = ("group_name", "ordering", "label")
 
+    @classmethod
+    def get_choices(cls, group_name: str, **filters):
+        """Fetch all choices for a given `group_name` from the database."""
+        return cls.objects.filter(group_name=group_name, **filters)
+
     def __str__(self):
         return f"{self.label} ({self.value})"
 
