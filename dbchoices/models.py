@@ -40,6 +40,14 @@ class AbstractDynamicChoice(models.Model):
         """Fetch all choices for a given `group_name` from the database."""
         return cls.objects.filter(group_name=group_name, **filters)
 
+    @classmethod
+    def _create_choices(cls, choices: list[Self], ignore_conflicts: bool = True) -> list[Self]:
+        return cls.objects.bulk_create(choices, ignore_conflicts=ignore_conflicts)
+
+    @classmethod
+    def _delete_choices(cls, group_names: list[str], **filters) -> None:
+        cls.objects.filter(group_name__in=group_names, **filters).delete()
+
     def __str__(self):
         return f"{self.label} ({self.value})"
 
@@ -48,10 +56,10 @@ class DynamicChoice(AbstractDynamicChoice):
     """The default concrete implementation provided by the package. This model can be
     used as-is for storing dynamic choices.
 
-    This model can be swapped out by setting the `DYNAMIC_CHOICE_MODEL` setting.
+    This model can be swapped out by setting the `DBCHOICE_MODEL` setting.
     """
 
     class Meta:
-        swappable = "DYNAMIC_CHOICE_MODEL"
+        swappable = "DBCHOICE_MODEL"
         unique_together = ("group_name", "value")
         verbose_name = _("Dynamic Choice")
