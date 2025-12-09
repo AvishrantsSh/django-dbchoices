@@ -2,8 +2,31 @@
 name = "django-dbchoices"
 version = "0.1.0"
 description = "A Django package for storing and managing database-backed choices."
+authors = [
+  { name = "Avishrant Sharma", email = "avishrants@gmail.com"}
+]
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.8"
+
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Framework :: Django",
+    "Framework :: Django :: 3",
+    "Framework :: Django :: 4",
+    "Framework :: Django :: 5",
+    "Framework :: Django :: 6",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "django",
+]
 
 [project.urls]
 Homepage = "https://github.com/AvishrantsSh/django-dbchoices"
