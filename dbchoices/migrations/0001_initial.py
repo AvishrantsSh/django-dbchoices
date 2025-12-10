@@ -1,0 +1,56 @@
+import django.utils.timezone
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    initial = True
+
+    dependencies = []
+
+    operations = [
+        migrations.CreateModel(
+            name="DynamicChoice",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "group_name",
+                    models.SlugField(
+                        help_text="The unique identifier for this group of choices (e.g. `Status`, `Priority`).",
+                        max_length=100,
+                    ),
+                ),
+                (
+                    "label",
+                    models.CharField(
+                        help_text="The human-readable label for the choices (e.g. 'Work In Progress').", max_length=100
+                    ),
+                ),
+                (
+                    "value",
+                    models.CharField(
+                        help_text="The choice value stored in the database (e.g. `in_progress`, `closed`).",
+                        max_length=100,
+                    ),
+                ),
+                (
+                    "ordering",
+                    models.IntegerField(
+                        default=0,
+                        help_text="Control the sort order of choice in dropdowns. Lower numbers appear first.",
+                    ),
+                ),
+                (
+                    "is_system_default",
+                    models.BooleanField(
+                        default=False, help_text="Indicates if this choice was created by the system during startup."
+                    ),
+                ),
+                ("meta_created_at", models.DateTimeField(default=django.utils.timezone.now, editable=False)),
+            ],
+            options={
+                "verbose_name": "Dynamic Choice",
+                "swappable": "DBCHOICE_MODEL",
+                "unique_together": {("group_name", "value")},
+            },
+        ),
+    ]

@@ -105,10 +105,14 @@ class ChoiceRegistry:
         return cls._enum_cache[cache_key]
 
     @classmethod
-    def sync_defaults(cls, recreate_defaults: bool = True, recreate_all: bool = False) -> None:
+    def sync_defaults(
+        cls, group_names: list[str] | None = None, recreate_defaults: bool = True, recreate_all: bool = False
+    ) -> None:
         """Recreate all default choices from code definitions.
 
         Args:
+            group_names (list[str] | None):
+                A list of group names to sync. If None, all registered groups will be synced.
             recreate_defaults (bool):
                 If True, all choices that are no longer a part of the default definitions will be deleted.
             recreate_all (bool):
@@ -126,7 +130,12 @@ class ChoiceRegistry:
             )
             for group, items in cls._defaults.items()
             for idx, (value, label) in enumerate(items)
+            if group_names is None or group in group_names
         ]
+        if not choice_instances:
+            logger.info("No default choices to synchronize.")
+            return
+
         with transaction.atomic():
             if recreate_all:
                 logger.info("Recreating all default choices.")
