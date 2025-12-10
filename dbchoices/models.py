@@ -36,17 +36,17 @@ class AbstractDynamicChoice(models.Model):
         ordering = ("group_name", "ordering", "label")
 
     @classmethod
-    def get_choices(cls, group_name: str, **filters):
+    def get_choices(cls, group_name: str, **group_filters):
         """Fetch all choices for a given `group_name` from the database."""
-        return cls.objects.filter(group_name=group_name, **filters)
+        return cls.objects.filter(group_name=group_name, **group_filters)
 
     @classmethod
     def _create_choices(cls, choices: list[Self], ignore_conflicts: bool = True) -> list[Self]:
         return cls.objects.bulk_create(choices, ignore_conflicts=ignore_conflicts)
 
     @classmethod
-    def _delete_choices(cls, group_names: list[str], **filters) -> None:
-        cls.objects.filter(group_name__in=group_names, **filters).delete()
+    def _delete_choices(cls, group_names: list[str], **group_filters) -> None:
+        cls.objects.filter(group_name__in=group_names, **group_filters).delete()
 
     def __str__(self):
         return f"{self.label} ({self.value})"

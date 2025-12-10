@@ -3,7 +3,8 @@ from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
+from django.db import models, transaction
+from django.utils.text import slugify
 
 from dbchoices.utils import generate_cache_key, get_choice_model
 
@@ -15,6 +16,7 @@ ChoiceModel = get_choice_model()
 
 class ChoiceRegistry:
     _defaults: dict[str, list[tuple[str, str]]] = {}
+    _enum_cache: dict[str, type[models.TextChoices]] = {}
 
     @classmethod
     def register_defaults(cls, group_name: str, choices: list[tuple[str | int, str | int]]) -> None:
@@ -44,25 +46,63 @@ class ChoiceRegistry:
         cls._defaults[group_name] = normalized_choices
 
     @classmethod
-    def get_choices(cls, group_name: str, **filters: Any) -> list[tuple[str, str]]:
+    def get_choices(cls, group_name: str, **group_filters: Any) -> list[tuple[str, str]]:
         """Return a list of (value, label) for a given `group_name`.
 
         Args:
             group_name (str):
                 The name of the choice group to retrieve choices for.
-            **filters:
+            **group_filters:
                 Query filters to narrow down the choices. Useful in scenarios
                 where choices may depend on other attributes.
         """
-        cache_key = generate_cache_key(group_name, **filters)
+        cache_key = generate_cache_key(group_name, **group_filters)
         cached_data = cache.get(cache_key)
         if cached_data is not None:
             return cached_data
 
-        choice_queryset = ChoiceModel.get_choices(group_name, **filters)
+        choice_queryset = ChoiceModel.get_choices(group_name, **group_filters)
         choices = list(choice_queryset.values_list("value", "label"))
         cache.set(cache_key, choices, timeout=cache_timeout)
         return choices
+
+    @classmethod
+    def get_label(cls, group_name: str, value: str, **group_filters: Any) -> str:
+        """Translates a stored value to its label for a given group_name."""
+        for db_val, label in cls.get_choices(group_name, **group_filters):
+            if str(db_val) == value:
+                return label
+        return None
+
+    @classmethod
+    def get_enum(cls, group_name: str, **group_filters: Any) -> type[models.TextChoices]:
+        """
+        Generates a dynamic `TextChoices` enum for the given group_name.
+
+        Args:
+            group_name (str):
+                The name of the choice group to retrieve choices for.
+            **group_filters:
+                Query filters to narrow down the choices. Useful in scenarios
+                where choices may depend on other attributes.
+        """
+        cache_key = generate_cache_key(group_name, **group_filters)
+        if cache_key not in cls._enum_cache:
+            members = {}
+            choices = cls.get_choices(group_name, **group_filters)
+            for val, label in choices:
+                # Create valid python identifier: 'In Progress' -> 'IN_PROGRESS'
+                safe_key = slugify(str(val)).replace("-", "_").upper()
+                if not safe_key or safe_key[0].isdigit():
+                    safe_key = f"K_{safe_key}"
+
+                members[safe_key] = (val, label)
+
+            # Dynamically create a TextChoices subclass
+            class_name = f"{group_name.title().replace('_', '')}Choices"
+            cls._enum_cache[cache_key] = models.TextChoices(class_name, members)
+
+        return cls._enum_cache[cache_key]
 
     @classmethod
     def sync_defaults(cls, recreate_defaults: bool = True, recreate_all: bool = False) -> None:
@@ -102,9 +142,12 @@ class ChoiceRegistry:
             cls.invalidate_cache(group_name)
 
     @classmethod
-    def invalidate_cache(cls, group_name: str, **filters: Any) -> None:
+    def invalidate_cache(cls, group_name: str, **group_filters: Any) -> None:
         """Invalidate dynamic choice cache from the application."""
-        # Note: This only invalidates the cache for the specific group_name and filters.
+        # Note: This only invalidates the cache for the specific group_name and group_filters.
         # Invalidating all caches would require tracking all keys, or using a different caching strategy.
-        cache_key = generate_cache_key(group_name, **filters)
+        cache_key = generate_cache_key(group_name, **group_filters)
         cache.delete(cache_key)
+
+        if cache_key in cls._enum_cache:
+            del cls._enum_cache[cache_key]
