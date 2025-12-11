@@ -41,9 +41,9 @@ class Command(BaseCommand):
             self._list_choices()
         elif options["invalidate"] is not None:
             self._invalidate_cache(options["invalidate"])
-        elif options["sync"]:
+        elif options["sync"] is not None:
             self._sync_defaults(
-                group_names=options["sync"],
+                group_names=options["sync"] or None,  # Pass None if no specific groups are provided
                 recreate_defaults=options["recreate_defaults"],
                 recreate_all=options["recreate_all"],
             )
@@ -66,7 +66,7 @@ class Command(BaseCommand):
         try:
             ChoiceRegistry.sync_defaults(group_names, recreate_defaults=recreate_defaults, recreate_all=recreate_all)
             for group_name, group_members in ChoiceRegistry._defaults.items():
-                if group_names is not None and group_name not in group_names:
+                if group_names and group_name not in group_names:
                     continue
                 self.stdout.write(f"  Synchronized '{group_name}' ...", ending="")
                 self.stdout.write(self.style.SUCCESS(f" ({len(group_members)} choices)"))

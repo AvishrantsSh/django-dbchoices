@@ -54,4 +54,5 @@ ignore = ["E501", "RUF012"]
 [dependency-groups]
 dev = [
     "django>=5.2,<6",
+    "djangorestframework>=3.16.1",
 ]

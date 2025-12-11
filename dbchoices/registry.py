@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 from typing import Any
 
 from django.conf import settings
@@ -15,17 +16,24 @@ ChoiceModel = get_choice_model()
 
 
 class ChoiceRegistry:
-    _defaults: dict[str, list[tuple[str, str]]] = {}
+    """
+    A registry for managing dynamic database-backed choices.
+
+    This class provides generic methods to register, retrieve, and synchronize
+    choices with the database.
+    """
+
+    _defaults: dict[str, Iterable[tuple[str, str]]] = {}
     _enum_cache: dict[str, type[models.TextChoices]] = {}
 
     @classmethod
-    def register_defaults(cls, group_name: str, choices: list[tuple[str | int, str | int]]) -> None:
+    def register_defaults(cls, group_name: str, choices: Iterable[tuple[str | int, str | int]]) -> None:
         """Register default choices for a given `group_name`.
 
         Args:
             group_name (str):
                 The name of the choice group. This should be unique to avoid potential conflicts.
-            choices (list[tuple[str, str]]):
+            choices (Iterable[tuple[str, str]]):
                 A list of tuples representing the choices in the format (value, label).
         """
         values_set = set()
