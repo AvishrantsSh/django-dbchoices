@@ -27,6 +27,6 @@ def generate_cache_key(group_name: str, **filters) -> str:
 
     if filters:
         filter_items = tuple((k.lower(), str(v).lower()) for k, v in filters.items())
-        return cache_key + ":" + json.dumps(filter_items, sort_keys=True)
+        return cache_key + ":" + json.dumps(sorted(filter_items), separators=(",", ":"))
 
     return cache_key

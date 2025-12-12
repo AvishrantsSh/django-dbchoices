@@ -19,10 +19,12 @@ class AbstractDynamicChoice(models.Model):
     )
     value = models.CharField(
         max_length=100,
+        db_index=True,
         help_text=_("The choice value stored in the database (e.g. `in_progress`, `closed`)."),
     )
     ordering = models.IntegerField(
         default=0,
+        db_index=True,
         help_text=_("Control the sort order of choice in dropdowns. Lower numbers appear first."),
     )
     is_system_default = models.BooleanField(
@@ -38,7 +40,7 @@ class AbstractDynamicChoice(models.Model):
     @classmethod
     def get_choices(cls, group_name: str, **group_filters):
         """Fetch all choices for a given `group_name` from the database."""
-        return cls.objects.filter(group_name=group_name, **group_filters)
+        return cls.objects.filter(group_name=group_name, **group_filters).order_by("ordering", "value")
 
     @classmethod
     def _create_choices(cls, choices: list[Self], ignore_conflicts: bool = True) -> list[Self]:

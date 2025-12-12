@@ -85,7 +85,8 @@ class ChoiceRegistry:
     @classmethod
     def get_enum(cls, group_name: str, **group_filters: Any) -> type[models.TextChoices]:
         """
-        Generates a dynamic `TextChoices` enum for the given group_name.
+        Generates a dynamic `TextChoices` enum for the given group_name. The enum members
+        only include choices registered as system defaults.
 
         Args:
             group_name (str):
@@ -94,10 +95,14 @@ class ChoiceRegistry:
                 Query filters to narrow down the choices. Useful in scenarios
                 where choices may depend on other attributes.
         """
+        group_filters["is_system_default"] = True  # Only include system default choices in enums
         cache_key = generate_cache_key(group_name, **group_filters)
         if cache_key not in cls._enum_cache:
             members = {}
             choices = cls.get_choices(group_name, **group_filters)
+            if not choices:
+                raise ValueError(f"No choices found for group '{group_name}' to create enum.")
+
             for val, label in choices:
                 # Create valid python identifier: 'In Progress' -> 'IN_PROGRESS'
                 safe_key = slugify(str(val)).replace("-", "_").upper()
