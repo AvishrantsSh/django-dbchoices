@@ -1,18 +1,23 @@
 import logging
 from collections.abc import Iterable
+from enum import Enum
 from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models, transaction
+from django.utils.regex_helper import _lazy_re_compile
 from django.utils.text import slugify
 
 from dbchoices.utils import generate_cache_key, get_choice_model
 
 logger = logging.getLogger(__name__)
 cache_timeout = getattr(settings, "DBCHOICES_CACHE_TIMEOUT", 1 * 60 * 60)  # Default: 1 hour
+safe_slug_regex = _lazy_re_compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 ChoiceModel = get_choice_model()
+EnumTuple = tuple[str, str, str]
+"""A tuple representing an enum member with (name, value, label)."""
 
 
 class ChoiceRegistry:
@@ -23,35 +28,84 @@ class ChoiceRegistry:
     choices with the database.
     """
 
-    _defaults: dict[str, Iterable[tuple[str, str]]] = {}
+    _defaults: dict[str, Iterable[EnumTuple]] = {}
     _enum_cache: dict[str, type[models.TextChoices]] = {}
 
     @classmethod
-    def register_defaults(cls, group_name: str, choices: Iterable[tuple[str | int, str | int]]) -> None:
+    def register_defaults(cls, group_name: str, choices: Iterable[EnumTuple | tuple[str, str]]) -> None:
         """Register default choices for a given `group_name`.
 
         Args:
             group_name (str):
                 The name of the choice group. This should be unique to avoid potential conflicts.
-            choices (Iterable[tuple[str, str]]):
-                A list of tuples representing the choices in the format (value, label).
+            choices (Iterable[EnumTuple | tuple[str, str]]):
+                A list of tuples representing the choices to register.
         """
+
+        def _sanitize_value(val) -> str:
+            return str(val).strip()
+
+        name_set = set()
         values_set = set()
         normalized_choices = []
         for item in choices:
-            val, label = item[0], item[1]
-            # Basic sanity checks to ensure value and label are valid
-            if not isinstance(val, str | int):
-                raise ValueError(f"Choice value must be a string or int, got {type(val).__name__} for {item}")
-            if not isinstance(label, str | int):
-                raise ValueError(f"Choice label must be a string or int, got {type(label).__name__} for {item}")
-            if val in values_set:
-                raise ValueError(f"Duplicate choice value '{val}' found in group '{group_name}'")
+            # Unpack the choice tuple and normalize to strings
+            if not isinstance(item, tuple | list) or len(item) not in (2, 3):
+                raise ValueError(
+                    f"Invalid choice format '{item}' in group '{group_name}'. "
+                    "Expected a tuple of (name, value) or (name, value, label)."
+                )
 
-            values_set.add(str(val))
-            normalized_choices.append((str(val), str(label)))
+            name_str = _sanitize_value(item[0])
+            value_str = _sanitize_value(item[1])
+            label_str = _sanitize_value(item[2]) if len(item) == 3 else value_str
+
+            if value_str in values_set:
+                raise ValueError(f"Duplicate choice value '{value_str}' found in group '{group_name}'")
+
+            values_set.add(value_str)
+            if safe_slug_regex.match(name_str) is None:
+                name_str_slug = slugify(name_str).replace("-", "_").upper()
+                logger.warning(
+                    f"Choice '{name_str}' in group '{group_name}' is not a valid Python identifier."
+                    f" The choice name will be slugified to '{name_str_slug}'."
+                )
+                name_str = name_str_slug
+
+            if name_str in name_set:
+                raise ValueError(f"Duplicate choice name '{name_str}' found in group '{group_name}'")
+
+            name_set.add(name_str)
+            normalized_choices.append((name_str, value_str, label_str))
 
         cls._defaults[group_name] = normalized_choices
+
+    @classmethod
+    def register_enum(cls, enum_cls: type[Enum | models.Choices], group_name: str | None = None) -> None:
+        """Register choices from a given Enum class.
+
+        Args:
+            enum_cls (type[Enum | models.Choices]):
+                The Enum class containing choice definitions.
+            group_name (str | None):
+                The name of the choice group. If None, the Enum class name will be used.
+        """
+        if not issubclass(enum_cls, Enum):
+            raise ValueError("Provided class is not a subclass of Enum.")
+
+        if group_name is None:
+            group_name = enum_cls.__name__
+
+        choices = []
+        for member in enum_cls:
+            if issubclass(enum_cls, models.Choices):
+                choices.append((member.name, str(member.value), str(member.label)))
+            elif isinstance(member.value, tuple):
+                choices.append((member.name, str(member.value[0]), str(member.value[1])))
+            else:
+                choices.append((member.name, str(member.value), str(member.name)))
+
+        cls._defaults[group_name] = choices
 
     @classmethod
     def get_choices(cls, group_name: str, **group_filters: Any) -> list[tuple[str, str]]:
@@ -133,17 +187,21 @@ class ChoiceRegistry:
                 delete user-added choices as well. Use with caution.
         """
         # Accumulate all default choice instances to be created/updated
+        if group_names is None:
+            group_names = list(cls._defaults.keys())
+
         choice_instances = [
             ChoiceModel(
                 group_name=group,
+                name=name,
                 value=value,
                 label=label,
                 ordering=idx,
                 is_system_default=True,
             )
             for group, items in cls._defaults.items()
-            for idx, (value, label) in enumerate(items)
-            if group_names is None or group in group_names
+            for idx, (name, value, label) in enumerate(items)
+            if group in group_names
         ]
         if not choice_instances:
             logger.info("No default choices to synchronize.")
@@ -152,10 +210,10 @@ class ChoiceRegistry:
         with transaction.atomic():
             if recreate_all:
                 logger.info("Recreating all default choices.")
-                ChoiceModel._delete_choices(list(cls._defaults.keys()))
+                ChoiceModel._delete_choices(group_names)
             elif recreate_defaults:
                 logger.info("Deleting abandoned default choices.")
-                ChoiceModel._delete_choices(list(cls._defaults.keys()), is_system_default=True)
+                ChoiceModel._delete_choices(group_names, is_system_default=True)
 
             ChoiceModel._create_choices(choice_instances)
             logger.info(f"Synchronized {len(cls._defaults)} groups and {len(choice_instances)} choices.")

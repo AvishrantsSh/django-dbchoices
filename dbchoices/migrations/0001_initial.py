@@ -21,6 +21,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "name",
+                    models.CharField(
+                        help_text="The enum-like name for the choice (e.g. `IN_PROGRESS`, `CLOSED`).", max_length=100
+                    ),
+                ),
+                (
                     "label",
                     models.CharField(
                         help_text="The human-readable label for the choices (e.g. 'Work In Progress').", max_length=100
@@ -39,7 +45,7 @@ class Migration(migrations.Migration):
                     models.IntegerField(
                         db_index=True,
                         default=0,
-                        help_text="Control the sort order of choice in dropdowns. Lower numbers appear first.",
+                        help_text="Control the sort order of choices in dropdowns. Lower numbers appear first.",
                     ),
                 ),
                 (
@@ -53,7 +59,7 @@ class Migration(migrations.Migration):
             options={
                 "verbose_name": "Dynamic Choice",
                 "swappable": "DBCHOICE_MODEL",
-                "unique_together": {("group_name", "value")},
+                "unique_together": {("group_name", "name"), ("group_name", "value")},
             },
         ),
     ]

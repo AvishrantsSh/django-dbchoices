@@ -13,6 +13,10 @@ class AbstractDynamicChoice(models.Model):
         db_index=True,
         help_text=_("The unique identifier for this group of choices (e.g. `Status`, `Priority`)."),
     )
+    name = models.CharField(
+        max_length=100,
+        help_text=_("The enum-like name for the choice (e.g. `IN_PROGRESS`, `CLOSED`)."),
+    )
     label = models.CharField(
         max_length=100,
         help_text=_("The human-readable label for the choices (e.g. 'Work In Progress')."),
@@ -25,7 +29,7 @@ class AbstractDynamicChoice(models.Model):
     ordering = models.IntegerField(
         default=0,
         db_index=True,
-        help_text=_("Control the sort order of choice in dropdowns. Lower numbers appear first."),
+        help_text=_("Control the sort order of choices in dropdowns. Lower numbers appear first."),
     )
     is_system_default = models.BooleanField(
         default=False,
@@ -63,5 +67,5 @@ class DynamicChoice(AbstractDynamicChoice):
 
     class Meta:
         swappable = "DBCHOICE_MODEL"
-        unique_together = ("group_name", "value")
+        unique_together = (("group_name", "name"), ("group_name", "value"))
         verbose_name = _("Dynamic Choice")

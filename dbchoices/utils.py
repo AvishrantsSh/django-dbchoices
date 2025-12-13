@@ -1,12 +1,14 @@
 import json
+from typing import TYPE_CHECKING
 
 from django.apps import apps
 from django.conf import settings
 
-from dbchoices.models import AbstractDynamicChoice, DynamicChoice
+if TYPE_CHECKING:
+    from dbchoices.models import AbstractDynamicChoice
 
 
-def get_choice_model() -> type[AbstractDynamicChoice]:
+def get_choice_model() -> type["AbstractDynamicChoice"]:
     """Return the initialized dynamic choice model for internal reference.
 
     This function checks the `DBCHOICE_MODEL` setting to determine
@@ -16,6 +18,8 @@ def get_choice_model() -> type[AbstractDynamicChoice]:
     model_label = getattr(settings, "DBCHOICE_MODEL", None)
 
     if model_label is None:
+        from dbchoices.models import DynamicChoice
+
         return DynamicChoice
 
     return apps.get_model(model_label, require_ready=False)
