@@ -9,7 +9,8 @@ class ChoiceFieldMixin:
     def __init__(self, group_name: str, group_filters: dict | None = None, **kwargs):
         self.group_filters = group_filters or {}
         self.from_label = kwargs.pop("from_label", False)
-        super().__init__(choices=group_name, **kwargs)
+        kwargs["choices"] = group_name  # Overwrite any passed choices
+        super().__init__(**kwargs)
 
     @property
     def choices(self):
@@ -35,7 +36,7 @@ class ChoiceFieldMixin:
     def choice_strings_to_values(self):
         # This is used to map string representations back to their values
         # This value is populated by DRF internally as part of choice setter.
-        return {str(label): value for value, label in self.choices.items()}
+        return {str(value): value for value, _ in self.choices.items()}
 
 
 class DynamicChoiceField(ChoiceFieldMixin, serializers.ChoiceField):

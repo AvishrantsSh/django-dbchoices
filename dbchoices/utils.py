@@ -30,7 +30,7 @@ def generate_cache_key(group_name: str, **filters) -> str:
     cache_key = f"dbchoice:{group_name}"
 
     if filters:
-        filter_items = tuple((k.lower(), str(v).lower()) for k, v in filters.items())
+        filter_items = tuple((k, str(v)) for k, v in filters.items())
         return cache_key + ":" + json.dumps(sorted(filter_items), separators=(",", ":"))
 
     return cache_key

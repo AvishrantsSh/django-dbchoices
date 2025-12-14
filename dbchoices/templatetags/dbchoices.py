@@ -16,7 +16,7 @@ def choice_label(value: str, group_name: str):
     """
     if value is None or value == "":
         return ""
-    return ChoiceRegistry.get_label(group_name, value)
+    return ChoiceRegistry.get_label(group_name, value, default=value)
 
 
 @register.simple_tag(name="get_choice_enum")

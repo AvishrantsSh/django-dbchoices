@@ -129,12 +129,12 @@ class ChoiceRegistry:
         return choices
 
     @classmethod
-    def get_label(cls, group_name: str, value: str, **group_filters: Any) -> str:
+    def get_label(cls, group_name: str, value: str, default: Any = None, **group_filters: Any) -> str:
         """Translates a stored value to its label for a given group_name."""
         for db_val, label in cls.get_choices(group_name, **group_filters):
             if str(db_val) == value:
                 return label
-        return None
+        return default
 
     @classmethod
     def get_enum(cls, group_name: str, **group_filters: Any) -> type[models.TextChoices]:

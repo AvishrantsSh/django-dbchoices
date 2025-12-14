@@ -52,8 +52,11 @@ class Command(BaseCommand):
         """List all choices currently registered in the Python code."""
         for group_name, choices in ChoiceRegistry._defaults.items():
             self.stdout.write(f"Group: {group_name}")
-            for value, label in choices:
-                self.stdout.write(f"  Value: {value} | Label: {label}")
+            for name, value, label in choices:
+                self.stdout.write(f"  Name: {name}")
+                self.stdout.write(f"    Value: {value}")
+                self.stdout.write(f"    Label: {label}")
+
             self.stdout.write("")  # Blank line between groups
 
     def _invalidate_cache(self, group_name: str | None):
