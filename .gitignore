@@ -37,5 +37,6 @@ Thumbs.db
 *.bak
 coverage.xml
 htmlcov/
+.coverage
 coverage/
 .cache/
