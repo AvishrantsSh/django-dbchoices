@@ -9,7 +9,7 @@ endif
 
 dev: install
 	@echo "-> Installing Developer Dependencies"
-	uv sync
+	uv sync --group test --group dev
 	uvx pre-commit install
 
 format:
@@ -31,3 +31,17 @@ package: clean
 remove-hooks:
 	@echo "-> Removing the pre-commit hooks"
 	uv run pre-commit uninstall
+
+test:
+	@echo "-> Running tests"
+	uv run pytest
+
+test-verbose:
+	@echo "-> Running tests with verbose output"
+	uv run pytest -v
+
+test-coverage:
+	@echo "-> Running tests with coverage"
+	uv run pytest --cov=dbchoices --cov-report=html --cov-report=term
+
+.PHONY: install dev format clean package remove-hooks test test-verbose test-coverage

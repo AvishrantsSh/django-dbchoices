@@ -33,11 +33,12 @@ Repository = "https://github.com/AvishrantsSh/django-dbchoices.git"
 Issues = "https://github.com/AvishrantsSh/django-dbchoices/issues"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
 
-[tool.hatch.build.targets.wheel]
-packages = ["dbchoices"]
+[tool.uv.build-backend]
+module-name = "dbchoices"
+module-root = ""
 
 [tool.ruff]
 line-length = 120
@@ -50,9 +51,22 @@ docstring-code-format = true
 [tool.ruff.lint]
 select = ["E", "F", "W", "Q", "A", "I", "B", "S", "UP", "SIM", "RUF"]
 ignore = ["E501", "RUF012"]
+per-file-ignores = { "tests/*" = ["S101"] }
 
 [dependency-groups]
 dev = [
     "django>=5.2,<6",
     "djangorestframework>=3.16.1",
+]
+test = [
+    "pytest>=9.0.2",
+    "pytest-django>=4.11.1",
+    "pytest-cov>=6.0.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = "tests.py test_*.py *_tests.py"
+markers = [
+    "integration: mark a test as an integration test",
 ]
