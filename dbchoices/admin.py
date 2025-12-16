@@ -4,7 +4,7 @@ from dbchoices.utils import get_choice_model
 
 
 class DynamicChoiceAdmin(admin.ModelAdmin):
-    list_display = ("group_name", "value", "label", "name", "ordering", "is_system_default")
+    list_display = ("group_name", "name", "value", "label", "ordering", "is_system_default")
     list_filter = ("group_name", "is_system_default")
     search_fields = ("group_name", "value", "label")
     ordering = ("group_name", "ordering")

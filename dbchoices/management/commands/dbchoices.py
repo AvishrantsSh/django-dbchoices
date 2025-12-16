@@ -71,8 +71,9 @@ class Command(BaseCommand):
             for group_name, group_members in ChoiceRegistry._defaults.items():
                 if group_names and group_name not in group_names:
                     continue
-                self.stdout.write(f"  Synchronized '{group_name}' ...", ending="")
-                self.stdout.write(self.style.SUCCESS(f" ({len(group_members)} choices)"))
+                group_name_str = f"  Synchronized '{group_name}' "
+                self.stdout.write(group_name_str.ljust(30), ending="")
+                self.stdout.write(self.style.SUCCESS(f"... ({len(group_members)} choices)"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error syncing choices: {e}"))
             raise e
