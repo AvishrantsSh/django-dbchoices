@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any
 
 from django.conf import settings
-from django.core.cache import cache
+from django.core.cache import caches
 from django.db import models, transaction
 from django.utils.regex_helper import _lazy_re_compile
 from django.utils.text import slugify
@@ -13,7 +13,9 @@ from dbchoices.utils import generate_cache_key, get_choice_model
 
 logger = logging.getLogger(__name__)
 cache_timeout = getattr(settings, "DBCHOICES_CACHE_TIMEOUT", 1 * 60 * 60)  # Default: 1 hour
+cache = caches[getattr(settings, "DBCHOICES_CACHE_ALIAS", "default")]
 safe_slug_regex = _lazy_re_compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+
 
 ChoiceModel = get_choice_model()
 EnumTuple = tuple[str, str, str]
