@@ -1,6 +1,6 @@
 [project]
 name = "django-dbchoices"
-version = "0.1.0"
+version = "0.1.1"
 description = "Simple Runtime Choices for Django Models & Forms."
 authors = [
   { name = "Avishrant Sharma", email = "avishrants@gmail.com"}
